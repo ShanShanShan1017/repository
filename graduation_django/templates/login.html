@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <title>登录页面</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('{% static "background.jpg" %}');
+            background-size: cover;
+            background-color: #f4f4f9;
+        }
+        #main {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        input {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col justify-center items-center">
+
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md" id="main">
+        <h1 class="text-2xl font-bold text-center mb-6" style="color:#374151">登录</h1>
+        <form action="{% url 'login' %}" method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="username" class="block text-gray-700 text-sm font-bold mb-2">用户名</label>
+                <input type="text" id="username" name="username"
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="请输入用户名">
+            </div>
+            <div class="mb-6">
+                <label for="password" class="block text-gray-700 text-sm font-bold mb-2">密码</label>
+                <input type="password" id="password" name="password"
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                       placeholder="请输入密码">
+            </div>
+            <div class="flex items-center justify-between">
+                <button type="submit"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" style="background-color:#255d9aa1">
+                    登录
+                </button>
+                <a href="{% url 'register' %}" class="text-sm text-blue-500 hover:text-blue-700">忘记密码?</a>
+            </div>
+        </form>
+        <div class="mt-4 text-center">
+            <p class="text-gray-600">还没有账号? <a href="{% url 'register' %}" class="text-blue-500 hover:text-blue-700">注册</a></p>
+        </div>
+    </div>
+</body>
+</html>

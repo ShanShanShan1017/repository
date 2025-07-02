@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .glass-effect {
+                background: rgba(255, 255, 255, 0.3);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }
+        }
+    </style>
+    <style>
+        body {
+            background-color: #f0f2f5;
+            background-image: url('{% static "background.jpg" %}');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <!-- 背景遮罩 -->
+<!--    <div class="fixed inset-0 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 z-0"></div>-->
+
+    <!-- 注册表单卡片 -->
+    <div class="relative z-10 w-full max-w-md">
+        <div class="glass-effect rounded-2xl p-8 shadow-xl">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-white mb-2">创建账号</h2>
+                <p class="text-gray-200">加入我们，开启我们的寻房之旅！</p>
+            </div>
+
+            <form id="registerForm" action="/register/" method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <!-- 账号 -->
+                <div class="space-y-2">
+                    <label for="username" class="block text-white font-medium">账号</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <i class="fa fa-user"></i>
+                        </span>
+                        <input type="text" id="username" name="username"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg bg-white/20 text-white placeholder-gray-300 border border-white/30 focus:ring-2 focus:ring-primary/50 focus:border-primary transition duration-200"
+                            placeholder="请输入账号" required>
+                    </div>
+                </div>
+
+                <!-- 密码 -->
+                <div class="space-y-2">
+                    <label for="password" class="block text-white font-medium">密码</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <i class="fa fa-lock"></i>
+                        </span>
+                        <input type="password" id="password" name="password"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg bg-white/20 text-white placeholder-gray-300 border border-white/30 focus:ring-2 focus:ring-primary/50 focus:border-primary transition duration-200"
+                            placeholder="请输入密码" required>
+                    </div>
+                </div>
+
+                <!-- 注册按钮 -->
+                <div>
+                    <button type="submit"
+                        class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+                        <span>立即注册</span>
+                        <i class="fa fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </form>
+
+            <!-- 已有账号 -->
+            <div class="mt-6 text-center">
+                <p class="text-gray-200">
+                    已有账号? <a href="/login/" class="text-primary hover:underline font-medium transition-colors">立即登录</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 表单提交处理 -->
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // 简单前端验证
+            if (!username || !password) {
+                e.preventDefault();
+                alert('请填写账号和密码');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

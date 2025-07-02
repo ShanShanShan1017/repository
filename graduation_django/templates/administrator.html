@@ -1,0 +1,576 @@
+<!-- administrator.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <!-- 引入Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+           .content-auto {
+                content-visibility: auto;
+            }
+           .glass-effect {
+                background: rgba(255, 255, 255, 0.3);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }
+           .house-card {
+                @apply bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-4 mb-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+           .house-card h4 {
+                @apply text-lg font-semibold text-gray-800 mb-2;
+            }
+           .house-card p {
+                @apply text-gray-600 mb-3;
+            }
+           .house-card a {
+                @apply inline-block bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors duration-300;
+            }
+        }
+    </style>
+    <style>
+        body {
+            background-image:url('{% static "background.jpg" %}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 2px;
+            background-color: rgba(255, 255, 255, 0.6)!important;  /* 调整半透明值 */
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: center; /* 让表格内文本居中 */
+        }
+
+        th,
+        td {
+            white-space: nowrap;
+            padding: 12px 0px;
+            border-bottom: 1px solid #d1e1e8;
+        }
+
+        th {
+            font-weight: 400;
+            color: #2c3e50;
+        }
+
+        tr:hover {
+            background-color: rgba(245, 245, 245, 0.8);
+            cursor: pointer;
+        }
+
+        ul.pagination {
+            list-style-type: none;
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        li.page-item {
+            margin: 0 5px;
+        }
+
+        a.page-link {
+            display: block;
+            padding: 8px 12px;
+            border: 1px solid #d1e1e8;
+            color: #2c3e50;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        span.page-link {
+            display: block;
+            padding: 8px 12px;
+            border: 1px solid #3498db;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        li.active a.page-link {
+            background-color: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+
+        /* 导航栏样式 */
+        nav {
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        nav ul li {
+            margin-right: 20px;
+        }
+
+        nav ul li a {
+            color: #2c3e50;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            @apply hover:text-blue-500;
+        }
+
+        /* 用户名样式 */
+       .username {
+            color: #2c3e50;
+            margin-left: 20px;
+        }
+
+        /* 图表容器样式 */
+       .chart-container {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    <title>管理员页面 - 房源信息</title>
+</head>
+<body class="bg-gray-100">
+
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <nav>
+        <ul>
+            <li><a href="#" id="allHouses">全部房源</a></li>
+            <li><a href="#" id="addData">添加数据</a></li>
+            <li><a href="#" id="deleteData">删除数据</a></li>
+            <li><a href="#" id="manageUsers">管理用户</a></li>
+        </ul>
+        <span class="username">{% if user.is_authenticated %}{{ user.username }}管理员你好{% else %}未登录{% endif %}</span>
+        <ul>
+            <li><a href="/login/">退出登录</a></li>
+        </ul>
+    </nav>
+    <div id="content" class="container mx-auto p-8" style="width: 100%;margin: 0 auto;">
+        <h1 class="text-3xl font-bold text-center mb-8">房源信息</h1>
+        <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden" id="biao">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th>ID</th>
+                    <th>简介</th>
+                    <th>小区</th>
+                    <th>户型</th>
+                    <th>面积</th>
+                    <th>关注人数</th>
+                    <th>观看次数</th>
+                    <th>发布时间</th>
+                    <th>房价</th>
+                    <th>单价/平</th>
+                    <th>城区</th>
+                    <th>经度</th>
+                    <th>纬度</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for house in page_obj %}
+                <tr class="border-b">
+                    <td>{{ house.id }}</td>
+                    <td>{{ house.jianjie }}</td>
+                    <td>{{ house.xiaoqu }}</td>
+                    <td>{{ house.huxing }}</td>
+                    <td>{{ house.mianji }}</td>
+                    <td>{{ house.guanzhurenshu }}</td>
+                    <td>{{ house.guankancishu }}</td>
+                    <td>{{ house.fabushijian }}</td>
+                    <td>{{ house.fangjia }}</td>
+                    <td>{{ house.danjia }}</td>
+                    <td>{{ house.chengqu }}</td>
+                    <td>{{ house.jingdu }}</td>
+                    <td>{{ house.weidu }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- 分页导航 -->
+        <div class="flex justify-center mt-8">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-l-md"
+                        href="?page=1">&laquo; 第一页</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ page_obj.previous_page_number }}">上一页</a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link bg-blue-500 border border-blue-500 text-white px-3 py-1">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ page_obj.next_page_number }}">下一页</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-r-md"
+                        href="?page={{ page_obj.paginator.num_pages }}">最后一页 &raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <div id="deleteDataForm" class="container mx-auto p-8" style="width: 100%;margin: 0 auto; display: none;">
+        <h1 class="text-3xl font-bold text-center mb-8">房源信息</h1>
+        <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden" id="deletebiao">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th>ID</th>
+                    <th>简介</th>
+                    <th>小区</th>
+                    <th>户型</th>
+                    <th>面积</th>
+                    <th>关注人数</th>
+                    <th>观看次数</th>
+                    <th>发布时间</th>
+                    <th>房价</th>
+                    <th>单价/平</th>
+                    <th>城区</th>
+                    <th>经度</th>
+                    <th>纬度</th>
+                    <th>操作</th> <!-- 新增操作列 -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for house in page_obj %}
+                <tr class="border-b" data-house-id="{{ house.id }}">
+                    <td>{{ house.id }}</td>
+                    <td>{{ house.jianjie }}</td>
+                    <td>{{ house.xiaoqu }}</td>
+                    <td>{{ house.huxing }}</td>
+                    <td>{{ house.mianji }}</td>
+                    <td>{{ house.guanzhurenshu }}</td>
+                    <td>{{ house.guankancishu }}</td>
+                    <td>{{ house.fabushijian }}</td>
+                    <td>{{ house.fangjia }}</td>
+                    <td>{{ house.danjia }}</td>
+                    <td>{{ house.chengqu }}</td>
+                    <td>{{ house.jingdu }}</td>
+                    <td>{{ house.weidu }}</td>
+                    <td>
+                        <button class="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600 transition-colors duration-300 delete-button">删除</button>
+                    </td> <!-- 新增删除按钮 -->
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- 分页导航 -->
+        <div class="flex justify-center mt-8">
+            <ul class="pagination">
+                <!-- 已有代码保持不变 -->
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-l-md"
+                        href="?page=1">&laquo; 第一页</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ page_obj.previous_page_number }}">上一页</a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link bg-blue-500 border border-blue-500 text-white px-3 py-1">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ page_obj.next_page_number }}">下一页</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-r-md"
+                        href="?page={{ page_obj.paginator.num_pages }}">最后一页 &raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+
+    <div id="addDataForm" class="container mx-auto p-8 glass-effect rounded-lg shadow-md mt-8" style="width: 100%; margin: 0 auto; display: none;">
+        <form id="addHouseForm" class="flex flex-wrap gap-4 items-end">
+            <!-- 简介 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="jianjie" class="text-sm font-medium text-gray-700 mb-1">简介:</label>
+                <input type="text" id="jianjie" name="jianjie" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 小区 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="xiaoqu" class="text-sm font-medium text-gray-700 mb-1">小区:</label>
+                <input type="text" id="xiaoqu" name="xiaoqu" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 房型 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="huxing" class="text-sm font-medium text-gray-700 mb-1">房型:</label>
+                <input type="text" id="huxing" name="huxing" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 面积 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="mianji" class="text-sm font-medium text-gray-700 mb-1">面积:</label>
+                <input type="number" id="mianji" name="mianji" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 关注人数 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="guanzhurenshu" class="text-sm font-medium text-gray-700 mb-1">关注人数:</label>
+                <input type="number" id="guanzhurenshu" name="guanzhurenshu" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 观看次数 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="guankancishu" class="text-sm font-medium text-gray-700 mb-1">观看次数:</label>
+                <input type="number" id="guankancishu" name="guankancishu" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 发布时间 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="fabushijian" class="text-sm font-medium text-gray-700 mb-1">发布时间:</label>
+                <input type="datetime-local" id="fabushijian" name="fabushijian" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 房价 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="fangjia" class="text-sm font-medium text-gray-700 mb-1">房价:</label>
+                <input type="number" id="fangjia" name="fangjia" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 单价/平 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="danjia" class="text-sm font-medium text-gray-700 mb-1">单价/平:</label>
+                <input type="number" id="danjia" name="danjia" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 城区 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="chengqu" class="text-sm font-medium text-gray-700 mb-1">城区:</label>
+                <input type="text" id="chengqu" name="chengqu" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 经度 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="jingdu" class="text-sm font-medium text-gray-700 mb-1">经度:</label>
+                <input type="number" step="any" id="jingdu" name="jingdu" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <!-- 纬度 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="weidu" class="text-sm font-medium text-gray-700 mb-1">纬度:</label>
+                <input type="number" step="any" id="weidu" name="weidu" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+            </div>
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors duration-300">添加</button>
+        </form>
+    </div>
+
+    <div id="manageUsersContent" class="container mx-auto p-8 glass-effect rounded-lg shadow-md mt-8" style="width: 100%; margin: 0 auto; display: none;">
+        <h1 class="text-3xl font-bold text-center mb-8">用户信息</h1>
+            <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden" id="userTable">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>邮箱</th>
+                        <th>是否活跃</th>
+                        <th>是否为员工</th>
+                        <th>是否为超级用户</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 用户信息将通过JavaScript动态添加 -->
+                </tbody>
+            </table>
+
+    </div>
+    <!-- 这里可以添加添加数据、删除数据、管理用户的功能区域 -->
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 表格行点击事件
+        document.querySelectorAll('#biao tbody tr').forEach(row => {
+            row.addEventListener('click', () => {
+                const houseId = row.querySelector('td:first-child').textContent;
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                fetch(`/record_view_history/${houseId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        'house_id': houseId
+                    })
+                })
+               .then(response => response.json())
+               .then(data => console.log('浏览历史记录成功:', data))
+               .catch(error => console.error('记录浏览历史失败:', error));
+            });
+        });
+
+        // 删除房源函数
+        function deleteHouse(houseId) {
+            if (confirm('确定要删除该房源吗？')) {
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                console.log('CSRF Token:', csrftoken);
+                console.log('Deleting house with ID:', houseId);
+                fetch(`/delete_house/${houseId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    }
+                })
+               .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    return response.text().then(text => {
+                        console.log('Response text:', text);
+                        try {
+                            return JSON.parse(text);
+                        } catch (error) {
+                            console.error('Failed to parse response as JSON:', error);
+                            throw new Error('Invalid JSON response');
+                        }
+                    });
+                })
+               .then(data => {
+                    if (data.success) {
+                        alert('房源删除成功');
+                        location.reload(); // 刷新页面
+                    } else {
+                        alert('房源删除失败: ' + data.message);
+                    }
+                })
+               .catch(error => {
+                    console.error('删除房源失败:', error);
+                    alert('删除房源失败，请重试');
+                });
+            }
+        }
+
+        // 事件委托：监听删除按钮的点击事件
+        document.getElementById('deletebiao').addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-button')) {
+                const row = e.target.closest('tr');
+                const houseId = row.dataset.houseId;
+                deleteHouse(houseId);
+            }
+        });
+
+        // 处理添加房源表单提交事件
+        document.getElementById('addHouseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch('/add-house/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData
+            })
+           .then(response => response.json())
+           .then(data => {
+                if (data.success) {
+                    alert('房源添加成功');
+                    // 刷新页面或更新表格数据
+                    location.reload();
+                } else {
+                    alert('房源添加失败: ' + data.message);
+                }
+            })
+           .catch(error => {
+                console.error('添加房源失败:', error);
+                alert('添加房源失败，请重试');
+            });
+        });
+
+        // 全部房源按钮点击事件
+        document.getElementById('allHouses').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'block';
+            document.getElementById('addDataForm').style.display = 'none';
+            document.getElementById('deleteDataForm').style.display = 'none';
+            document.getElementById('manageUsersContent').style.display = 'none';
+        });
+
+        // 添加数据按钮点击事件
+        document.getElementById('addData').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('addDataForm').style.display = 'block';
+            document.getElementById('deleteDataForm').style.display = 'none';
+            document.getElementById('manageUsersContent').style.display = 'none';
+        });
+
+        // 删除数据按钮点击事件
+        document.getElementById('deleteData').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('addDataForm').style.display = 'none';
+            document.getElementById('deleteDataForm').style.display = 'block';
+            document.getElementById('manageUsersContent').style.display = 'none';
+        });
+
+        // 管理用户按钮点击事件
+        document.getElementById('manageUsers').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('addDataForm').style.display = 'none';
+            document.getElementById('deleteDataForm').style.display = 'none';
+            document.getElementById('manageUsersContent').style.display = 'block';
+            // 显示管理用户功能区域
+        });
+
+        // 初始化时显示房源数据
+        document.getElementById('content').style.display = 'block';
+        document.getElementById('manageUsersContent').style.display = 'none';
+        document.getElementById('addDataForm').style.display = 'none';
+        document.getElementById('deleteDataForm').style.display = 'none';
+    });
+    </script>
+</body>
+</html>

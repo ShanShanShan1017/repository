@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>二手房源推荐系统</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column; /* 让子元素垂直排列 */
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('{% static "background.jpg" %}');
+            background-size: cover;
+            background-color: #f4f4f9;
+            font-family: Arial, sans-serif; /* 设置字体 */
+            color: #ffffff8f; /* 设置文字颜色 */
+        }
+
+        h1 {
+            font-size: 48px; /* 调整标题字号 */
+            font-weight: bold; /* 加粗标题 */
+            margin-bottom: 30px; /* 增加标题与按钮的间距 */
+        }
+
+        a {
+            display: inline-block; /* 让链接像按钮一样呈现 */
+            padding: 10px 20px;
+            background-color: #255d9aa1; /* 按钮背景色 */
+            color: white; /* 按钮文字颜色 */
+            text-decoration: none; /* 去掉下划线 */
+            border: 1px solid #336dab00; /* 按钮边框 */
+            border-radius: 5px; /* 按钮圆角 */
+            transition: background-color 0.3s ease; /* 鼠标悬停过渡效果 */
+        }
+
+        a:hover {
+            background-color: #1d200e94; /* 鼠标悬停时的背景色 */
+        }
+    </style>
+</head>
+<body>
+    <h1>开启我们的寻房之旅</h1>
+    <div>
+        <a href="login">请登录</a>
+    </div>
+</body>
+</html>

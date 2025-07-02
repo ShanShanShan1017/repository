@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <!-- 引入Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+           .content-auto {
+                content-visibility: auto;
+            }
+           .glass-effect {
+                background: rgba(255, 255, 255, 0.3);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }
+           .house-card {
+                @apply bg-white/80 backdrop-blur-sm rounded-lg shadow-md p-4 mb-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+           .house-card h4 {
+                @apply text-lg font-semibold text-gray-800 mb-2;
+            }
+           .house-card p {
+                @apply text-gray-600 mb-3;
+            }
+           .house-card a {
+                @apply inline-block bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors duration-300;
+            }
+        }
+    </style>
+    <style>
+        body {
+            background-image:url('{% static "background.jpg" %}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 2px;
+            background-color: rgba(255, 255, 255, 0.6)!important;  /* 调整半透明值 */
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: center; /* 让表格内文本居中 */
+        }
+
+        th,
+        td {
+            white-space: nowrap;
+            padding: 12px 0px;
+            border-bottom: 1px solid #d1e1e8;
+        }
+
+        th {
+            font-weight: 400;
+            color: #2c3e50;
+        }
+
+        tr:hover {
+            background-color: rgba(245, 245, 245, 0.8);
+            cursor: pointer;
+        }
+
+        ul.pagination {
+            list-style-type: none;
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        li.page-item {
+            margin: 0 5px;
+        }
+
+        a.page-link {
+            display: block;
+            padding: 8px 12px;
+            border: 1px solid #d1e1e8;
+            color: #2c3e50;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        span.page-link {
+            display: block;
+            padding: 8px 12px;
+            border: 1px solid #3498db;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        li.active a.page-link {
+            background-color: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+
+        /* 导航栏样式 */
+        nav {
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        nav ul li {
+            margin-right: 20px;
+        }
+
+        nav ul li a {
+            color: #2c3e50;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            @apply hover:text-blue-500;
+        }
+
+        /* 用户名样式 */
+       .username {
+            color: #2c3e50;
+            margin-left: 20px;
+        }
+
+        /* 图表容器样式 */
+       .chart-container {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    <title>房源信息</title>
+</head>
+<body class="bg-gray-100">
+
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <nav>
+        <ul>
+            <li><a href="#" id="allHouses">全部房源</a></li>
+            <li><a href="#" id="searchHouses">查找房源</a></li>
+            <li><a href="#" id="houseDistribution">房源分布</a></li>
+            <li><a href="#" id="houseTypeDistribution">房型分布</a></li>
+            <li><a href="#" id="houseRecommendation">我的推荐</a></li>
+            {% if is_admin %}
+            <li><a href="{% url 'administrator' %}">管理员入口</a></li>
+            {% endif %}
+        </ul>
+        <span class="username">{% if user.is_authenticated %}{{ user.username }}用户你好{% else %}未登录{% endif %}</span>
+        <ul>
+            <li><a href="/login/">退出登录</a></li>
+        </ul>
+    </nav>
+    <div id="content" class="container mx-auto p-8" style="width: 100%;margin: 0 auto;">
+        <h1 class="text-3xl font-bold text-center mb-8">房源信息</h1>
+        <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden" id="biao">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th>ID</th>
+                    <th>简介</th>
+                    <th>小区</th>
+                    <th>户型</th>
+                    <th>面积</th>
+                    <th>关注人数</th>
+                    <th>观看次数</th>
+                    <th>发布时间</th>
+                    <th>房价</th>
+                    <th>单价/平</th>
+                    <th>城区</th>
+                    <th>经度</th>
+                    <th>纬度</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for house in page_obj %}
+                <tr class="border-b">
+                    <td>{{ house.id }}</td>
+                    <td>{{ house.jianjie }}</td>
+                    <td>{{ house.xiaoqu }}</td>
+                    <td>{{ house.huxing }}</td>
+                    <td>{{ house.mianji }}</td>
+                    <td>{{ house.guanzhurenshu }}</td>
+                    <td>{{ house.guankancishu }}</td>
+                    <td>{{ house.fabushijian }}</td>
+                    <td>{{ house.fangjia }}</td>
+                    <td>{{ house.danjia }}</td>
+                    <td>{{ house.chengqu }}</td>
+                    <td>{{ house.jingdu }}</td>
+                    <td>{{ house.weidu }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- 分页导航 -->
+        <div class="flex justify-center mt-8">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-l-md"
+                        href="?page=1">&laquo; 第一页</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ page_obj.previous_page_number }}">上一页</a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link bg-blue-500 border border-blue-500 text-white px-3 py-1">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1"
+                        href="?page={{ page_obj.next_page_number }}">下一页</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded-r-md"
+                        href="?page={{ page_obj.paginator.num_pages }}">最后一页 &raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    <div id="searchForm" class="container mx-auto p-8 glass-effect rounded-lg shadow-md mt-8" style="width: 100%; margin: 0 auto; display: none;">
+        <form id="searchHouseForm" class="flex flex-wrap gap-4 items-end">
+            <!-- 城区下拉列表 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="chengqu" class="text-sm font-medium text-gray-700 mb-1">城区:</label>
+                <select id="chengqu" name="chengqu" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+                    <option value="">请选择城区</option>
+                </select>
+            </div>
+
+            <!-- 房型下拉列表 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="huxing" class="text-sm font-medium text-gray-700 mb-1">房型:</label>
+                <select id="huxing" name="huxing" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm">
+                    <option value="">请选择房型</option>
+                </select>
+            </div>
+
+            <!-- 单价范围 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="danjia_min" class="text-sm font-medium text-gray-700 mb-1">单价(元/平)：</label>
+                <div class="flex gap-2">
+                    <input type="number" id="danjia_min" name="danjia_min" placeholder="最低单价" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm w-1/2">
+                    <span class="self-center">-</span>
+                    <input type="number" id="danjia_max" name="danjia_max" placeholder="最高单价" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm w-1/2">
+                </div>
+            </div>
+
+            <!-- 总价范围 -->
+            <div class="flex flex-col w-full md:w-1/4">
+                <label for="fangjia_min" class="text-sm font-medium text-gray-700 mb-1">总价(万元)：</label>
+                <div class="flex gap-2">
+                    <input type="number" id="fangjia_min" name="fangjia_min" placeholder="最低总价" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm w-1/2">
+                    <span class="self-center">-</span>
+                    <input type="number" id="fangjia_max" name="fangjia_max" placeholder="最高总价" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm w-1/2">
+                </div>
+            </div>
+
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors duration-300">查找</button>
+        </form>
+    </div>
+
+    <div id="barChart" class="container mx-auto p-8" style="width: 100%;margin: 0 auto; display: none;">
+        <div class="chart-container">
+            <h2 class="text-xl font-semibold mb-4 text-center">房源城区分布</h2>
+            <div class="h-[400px]">
+                <canvas id="districtChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div id="pieChart" class="container mx-auto p-8" style="width: 100%;margin: 0 auto; display: none;">
+        <!-- 饼图容器 -->
+        <div class="chart-container">
+        <h2 class="text-xl font-semibold mb-4 text-center">房型分布</h2>
+        <div class="h-[400px]">
+            <canvas id="houseTypeChart"></canvas>
+        </div>
+    </div>
+    </div>
+    <div id="myRecommendation" class="container mx-auto p-8" style="width: 100%;margin: 0 auto; display: none;">
+         <h2 class="text-2xl font-bold mb-6 text-center">为您推荐的房源</h2>
+         <div class="relative overflow-x-auto">
+            <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th>ID</th>
+                        <th>简介</th>
+                        <th>小区</th>
+                        <th>户型</th>
+                        <th>面积</th>
+                        <th>关注人数</th>
+                        <th>观看次数</th>
+                        <th>发布时间</th>
+                        <th>房价</th>
+                        <th>单价/平</th>
+                        <th>城区</th>
+                    </tr>
+                </thead>
+                <tbody id="recommendation-body">
+                    <!-- 推荐房源将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let districtChart = null;
+        let houseTypeChart = null; // 新增饼图实例
+        // 获取CSRF令牌
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+           // 页面加载时获取城区和房型数据
+        fetch('/get_search_filters/')
+            .then(response => response.json())
+            .then(data => {
+                // 填充城区下拉列表
+                const chengquSelect = document.getElementById('chengqu');
+                data.chengqu.forEach(chengqu => {
+                    const option = document.createElement('option');
+                    option.value = chengqu;
+                    option.textContent = chengqu;
+                    chengquSelect.appendChild(option);
+                });
+
+                // 填充房型下拉列表
+                const huxingSelect = document.getElementById('huxing');
+                data.huxing.forEach(huxing => {
+                    const option = document.createElement('option');
+                    option.value = huxing;
+                    option.textContent = huxing;
+                    huxingSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('加载筛选条件失败:', error));
+
+        // 表格行点击事件
+        document.querySelectorAll('#biao tbody tr').forEach(row => {
+            row.addEventListener('click', () => {
+                const houseId = row.querySelector('td:first-child').textContent;
+                 fetch(`/record_view_history/${houseId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        'house_id': houseId
+                    })
+                })
+               .then(response => response.json())
+               .then(data => console.log('浏览历史记录成功:', data))
+               .catch(error => console.error('记录浏览历史失败:', error));
+            });
+        });
+
+        // 全部房源按钮点击事件
+        document.getElementById('allHouses').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'block';
+            document.getElementById('barChart').style.display = 'none';
+            document.getElementById('pieChart').style.display = 'none';
+            document.getElementById('myRecommendation').style.display = 'none';
+            document.getElementById('searchForm').style.display = 'none';
+
+        });
+
+        // 查找房源按钮点击事件
+        document.getElementById('searchHouses').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('barChart').style.display = 'none';
+            document.getElementById('pieChart').style.display = 'none';
+            document.getElementById('myRecommendation').style.display = 'none';
+            document.getElementById('searchForm').style.display = 'block';
+        });
+
+        document.getElementById('searchHouseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const chengqu = document.getElementById('chengqu').value;
+            const huxing = document.getElementById('huxing').value;
+            const danjia_min = document.getElementById('danjia_min').value;
+            const danjia_max = document.getElementById('danjia_max').value;
+            const fangjia_min = document.getElementById('fangjia_min').value;
+            const fangjia_max = document.getElementById('fangjia_max').value;
+
+            let url = '/search_houses/?';
+            if (chengqu) url += `chengqu=${chengqu}&`;
+            if (huxing) url += `huxing=${huxing}&`;
+            if (danjia_min) url += `danjia_min=${danjia_min}&`;
+            if (danjia_max) url += `danjia_max=${danjia_max}&`;
+            if (fangjia_min) url += `fangjia_min=${fangjia_min}&`;
+            if (fangjia_max) url += `fangjia_max=${fangjia_max}&`;
+
+            url = url.slice(0, -1); // 去掉最后一个 &
+
+            fetch(url)
+               .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+                    return response.json();
+                })
+               .then(houses => {
+                    const recommendationBody = document.getElementById('recommendation-body');
+                    recommendationBody.innerHTML = ''; // 清空表格
+
+                    if (houses.length === 0) {
+                        recommendationBody.innerHTML = `
+                            <tr>
+                                <td colspan="11" class="text-center py-4 text-gray-500">
+                                    未找到符合条件的房源
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    // 填充表格数据
+                    houses.forEach(house => {
+                        const row = document.createElement('tr');
+                        row.className = 'border-b hover:bg-gray-50 transition-colors';
+                        row.innerHTML = `
+                            <td>${house.id}</td>
+                            <td>${house.jianjie}</td>
+                            <td>${house.xiaoqu}</td>
+                            <td>${house.huxing}</td>
+                            <td>${house.mianji}</td>
+                            <td>${house.guanzhurenshu}</td>
+                            <td>${house.guankancishu}</td>
+                            <td>${house.fabushijian}</td>
+                            <td>${house.fangjia}</td>
+                            <td>${house.danjia}</td>
+                            <td>${house.chengqu}</td>
+                        `;
+                        recommendationBody.appendChild(row);
+                    });
+
+                    document.getElementById('content').style.display = 'none';
+                    document.getElementById('barChart').style.display = 'none';
+                    document.getElementById('pieChart').style.display = 'none';
+                    document.getElementById('myRecommendation').style.display = 'block';
+                    document.getElementById('searchForm').style.display = 'none';
+                })
+               .catch(error => {
+                    console.error('获取查找结果失败:', error);
+                    const recommendationBody = document.getElementById('recommendation-body');
+                    recommendationBody.innerHTML = `
+                        <tr>
+                            <td colspan="11" class="text-center py-4 text-red-500">
+                                查找失败，请重试
+                            </td>
+                        </tr>
+                    `;
+                });
+        });
+
+        // 房源分布按钮点击事件
+        document.getElementById('houseDistribution').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('barChart').style.display = 'block';
+            document.getElementById('pieChart').style.display = 'none';
+            document.getElementById('myRecommendation').style.display = 'none';
+            document.getElementById('searchForm').style.display = 'none';
+
+            // 检查图表是否已存在，若存在则销毁
+            if (districtChart) {
+                districtChart.destroy();
+            }
+
+            // 显示加载状态
+            const chartContainer = document.querySelector('#districtChart').parentElement;
+            chartContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>';
+
+            // 从API获取数据
+            fetch('/house-distribution/')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 恢复图表容器
+                    chartContainer.innerHTML = '<canvas id="districtChart"></canvas>';
+
+                    // 处理数据
+                    const formattedData = {
+                        labels: data.map(item => item.chengqu),
+                        data: data.map(item => item.count)
+                    };
+
+                    // 渲染图表
+                    renderDistrictChart(formattedData);
+                })
+                .catch(error => {
+                    console.error('获取数据失败:', error);
+                    chartContainer.innerHTML = '<div class="text-center text-red-500 mt-4">加载数据失败，请重试</div>';
+                });
+        });
+
+        // 房型分布按钮点击事件
+        document.getElementById('houseTypeDistribution').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('barChart').style.display = 'none';
+            document.getElementById('pieChart').style.display = 'block';
+            document.getElementById('myRecommendation').style.display = 'none';
+            document.getElementById('searchForm').style.display = 'none';
+
+            // 检查图表是否已存在，若存在则销毁
+            if (houseTypeChart) {
+                houseTypeChart.destroy();
+            }
+
+            // 显示加载状态
+            const chartContainer = document.querySelector('#houseTypeChart').parentElement;
+            chartContainer.innerHTML = '<div class="flex justify-center items-center h-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>';
+
+            // 从API获取数据
+            fetch('/house-type-distribution/')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 恢复图表容器
+                    chartContainer.innerHTML = '<canvas id="houseTypeChart"></canvas>';
+
+                    // 处理数据
+                    const formattedData = {
+                        labels: data.map(item => item.fangxing),
+                        data: data.map(item => item.count)
+                    };
+
+                    // 渲染图表
+                    renderHouseTypeChart(formattedData);
+                })
+                .catch(error => {
+                    console.error('获取数据失败:', error);
+                    chartContainer.innerHTML = '<div class="text-center text-red-500 mt-4">加载数据失败，请重试</div>';
+                });
+        });
+
+        // 我的推荐按钮点击事件
+        document.getElementById('houseRecommendation').addEventListener('click', function() {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('barChart').style.display = 'none';
+            document.getElementById('pieChart').style.display = 'none';
+            document.getElementById('myRecommendation').style.display = 'block';
+            document.getElementById('searchForm').style.display = 'none';
+
+            // 显示加载状态
+            const recommendationBody = document.getElementById('recommendation-body');
+            recommendationBody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="text-center py-4">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                        <span class="ml-2">加载中...</span>
+                    </td>
+                </tr>
+            `;
+
+            fetch('/recommend_houses/')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+                    return response.json();
+                })
+                .then(houses => {
+                    recommendationBody.innerHTML = ''; // 清空表格
+
+                    if (houses.length === 0) {
+                        recommendationBody.innerHTML = `
+                            <tr>
+                                <td colspan="11" class="text-center py-4 text-gray-500">
+                                    暂无推荐房源，请先浏览一些房源
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    // 填充表格数据
+                    houses.forEach(house => {
+                        const row = document.createElement('tr');
+                        row.className = 'border-b hover:bg-gray-50 transition-colors';
+                        row.innerHTML = `
+                            <td>${house.id}</td>
+                            <td>${house.jianjie}</td>
+                            <td>${house.xiaoqu}</td>
+                            <td>${house.huxing}</td>
+                            <td>${house.mianji}</td>
+                            <td>${house.guanzhurenshu}</td>
+                            <td>${house.guankancishu}</td>
+                            <td>${house.fabushijian}</td>
+                            <td>${house.fangjia}</td>
+                            <td>${house.danjia}</td>
+                            <td>${house.chengqu}</td>
+                        `;
+                        recommendationBody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('获取推荐房源失败:', error);
+                    recommendationBody.innerHTML = `
+                        <tr>
+                            <td colspan="11" class="text-center py-4 text-red-500">
+                                加载推荐失败，请重试
+                            </td>
+                        </tr>
+                    `;
+                });
+        });
+
+        // 初始化时显示房源数据
+        document.getElementById('content').style.display = 'block';
+        document.getElementById('barChart').style.display = 'none';
+        document.getElementById('pieChart').style.display = 'none';
+        document.getElementById('myRecommendation').style.display = 'none';
+        document.getElementById('searchForm').style.display = 'none';
+
+        // 渲染城区分布柱状图
+        function renderDistrictChart(data) {
+            const ctx = document.getElementById('districtChart').getContext('2d');
+
+            // 定义颜色方案
+            const backgroundColors = [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)',
+                'rgba(255, 159, 64, 0.7)',
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)'
+            ];
+
+            const borderColors = [
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)'
+            ];
+
+            districtChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '房源数量',
+                        data: data.data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barThickness: 30,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#2c3e50',
+                            bodyColor: '#2c3e50',
+                            borderColor: 'rgba(221, 221, 221, 0.8)',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 6,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return `房源数量: ${context.raw}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(221, 221, 221, 0.5)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                padding: 10,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                padding: 10,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        // 渲染房型分布饼图
+        function renderHouseTypeChart(data) {
+            const ctx = document.getElementById('houseTypeChart').getContext('2d');
+
+            // 定义颜色方案
+            const backgroundColors = [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)',
+                'rgba(255, 159, 64, 0.7)',
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(255, 105, 180, 0.7)',
+                'rgba(189, 183, 107, 0.7)',
+                'rgba(139, 69, 19, 0.7)'
+            ];
+
+            const borderColors = [
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(255, 105, 180, 1)',
+                'rgba(189, 183, 107, 1)',
+                'rgba(139, 69, 19, 1)'
+            ];
+
+            houseTypeChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#2c3e50',
+                            bodyColor: '#2c3e50',
+                            borderColor: 'rgba(221, 221, 221, 0.8)',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 6,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${context.label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html>
